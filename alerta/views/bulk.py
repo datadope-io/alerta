@@ -40,7 +40,7 @@ def bulk_set_status():
     if not status:
         raise ApiError("must supply 'status' as json data", 400)
 
-    query = qb.from_params(request.args)
+    query = qb.alerts.from_params(request.args)
     alerts = Alert.find_all(query)
 
     if not alerts:
@@ -82,7 +82,7 @@ def bulk_action_alert():
     if not action:
         raise ApiError("must supply 'action' as json data", 400)
 
-    query = qb.from_params(request.args)
+    query = qb.alerts.from_params(request.args)
     alerts = [alert.id for alert in Alert.find_all(query)]
 
     if not alerts:

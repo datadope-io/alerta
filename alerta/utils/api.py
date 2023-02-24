@@ -70,6 +70,7 @@ def process_alert(alert: Alert) -> Alert:
     for plugin in wanted_plugins:
         if skip_plugins:
             break
+        updated = None
         try:
             updated = plugin.post_receive(alert, config=wanted_config)
         except TypeError:
@@ -96,10 +97,11 @@ def process_action(alert: Alert, action: str, text: str, timeout: int = None) ->
 
     wanted_plugins, wanted_config = plugins.routing(alert)
 
-    updated = None
+    alert_was_updated = False
     for plugin in wanted_plugins:
         if alert.is_suppressed:
             break
+        updated = None
         try:
             updated = plugin.take_action(alert, action, text, timeout=timeout, config=wanted_config)
         except NotImplementedError:
@@ -119,8 +121,9 @@ def process_action(alert: Alert, action: str, text: str, timeout: int = None) ->
                 alert, action, text, timeout = updated
             elif len(updated) == 3:
                 alert, action, text = updated
+            alert_was_updated = True
 
-    if updated:
+    if alert_was_updated:
         alert.update_tags(alert.tags)
         alert.attributes = alert.update_attributes(alert.attributes)
 
@@ -131,8 +134,9 @@ def process_note(alert: Alert, text: str) -> Tuple[Alert, str]:
 
     wanted_plugins, wanted_config = plugins.routing(alert)
 
-    updated = None
+    alert_was_updated = False
     for plugin in wanted_plugins:
+        updated = None
         try:
             updated = plugin.take_note(alert, text, config=wanted_config)
         except NotImplementedError:
@@ -149,8 +153,9 @@ def process_note(alert: Alert, text: str) -> Tuple[Alert, str]:
             updated = updated, text
         if isinstance(updated, tuple) and len(updated) == 2:
             alert, text = updated
+            alert_was_updated = True
 
-    if updated:
+    if alert_was_updated:
         alert.update_tags(alert.tags)
         alert.update_attributes(alert.attributes)
 
@@ -161,10 +166,11 @@ def process_status(alert: Alert, status: str, text: str) -> Tuple[Alert, str, st
 
     wanted_plugins, wanted_config = plugins.routing(alert)
 
-    updated = None
+    alert_was_updated = False
     for plugin in wanted_plugins:
         if alert.is_suppressed:
             break
+        updated = None
         try:
             updated = plugin.status_change(alert, status, text, config=wanted_config)
         except TypeError:
@@ -177,12 +183,13 @@ def process_status(alert: Alert, status: str, text: str) -> Tuple[Alert, str, st
             else:
                 logging.error(f"Error while running status plugin '{plugin.name}': {str(e)}")
         if updated:
+            alert_was_updated = True
             try:
                 alert, status, text = updated
             except Exception:
                 alert = updated
 
-    if updated:
+    if alert_was_updated:
         alert.update_tags(alert.tags)
         alert.attributes = alert.update_attributes(alert.attributes)
 
