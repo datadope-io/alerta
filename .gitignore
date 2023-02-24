@@ -114,3 +114,9 @@ pg-data/
 *.BAK
 *.log*
 .vscode
+
+# Backends for testing
+/alerta/database/backends/*
+!/alerta/database/backends/*.*
+!/alerta/database/backends/*/
+

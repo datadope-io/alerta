@@ -62,21 +62,23 @@ Record = namedtuple('Record', [
 
 class Backend(Database):
 
-    def create_engine(self, app, uri, dbname=None, raise_on_error=True):
+    def create_engine(self, app, uri, dbname=None, raise_on_error=True, db_model: str = None):
         self.uri = uri
         self.dbname = dbname
 
         lock = threading.Lock()
         with lock:
             conn = self.connect()
-            with app.open_resource('sql/schema.sql') as f:
-                try:
-                    conn.cursor().execute(f.read())
-                    conn.commit()
-                except Exception as e:
-                    if raise_on_error:
-                        raise
-                    app.logger.warning(e)
+            try:
+                if not db_model:
+                    with app.open_resource('sql/schema.sql') as f:
+                        db_model = f.read()
+                conn.cursor().execute(db_model)
+                conn.commit()
+            except Exception as e:
+                if raise_on_error:
+                    raise
+                app.logger.warning(e)
 
         register_adapter(dict, Json)
         register_adapter(datetime, self._adapt_datetime)
